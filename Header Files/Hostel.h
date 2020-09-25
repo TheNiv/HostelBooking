@@ -17,7 +17,6 @@ private:
     Date currentDate;
 	list<Visit> m_currentVisits; // The current visits of people in the hotel details
 	int m_currentGuests;  // Number of guests currently in the hostel
-	float m_starReview; // The average review of the hostel
 	const char* m_city; // The city that the hostel is in.
 	int m_guestCapacity;  // The highest number of guests that can be in the hotel
 	double m_pricePerNight;  // The price for 1 night in the hostel
