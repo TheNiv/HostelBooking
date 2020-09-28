@@ -17,6 +17,7 @@ private:
     Date currentDate;
 	list<Visit> m_currentVisits; // The current visits of people in the hotel details
 	int m_currentGuests;  // Number of guests currently in the hostel
+	float m_starReview; // The average review of the hostel
 	const char* m_city; // The city that the hostel is in.
 	int m_guestCapacity;  // The highest number of guests that can be in the hotel
 	double m_pricePerNight;  // The price for 1 night in the hostel
@@ -27,7 +28,8 @@ public:
 	Hostel();
 	~Hostel();
 
-	bool CanBook(Visit visit) { // O(n)
+	bool CanBook(Visit& visit)  // O(n)
+	{ 
 		if (visit.m_start.year != currentDate.year && visit.m_start.year != currentDate.year + 1)
 			return false;
 		if (visit.m_start.IsAfter(currentDate) && EnoughSpaceFor(visit)) 
@@ -35,7 +37,7 @@ public:
 			return true;
 		}
 	}
-	bool EnoughSpaceFor(Visit visit) // O(n)
+	bool EnoughSpaceFor(Visit& visit) // O(n)
 	{	
 		//A function that returns true if there is enough space for the visit to occur in its dates 
 		//and false otherwise.
@@ -54,7 +56,8 @@ public:
 	void SetPricePerNight(double p) {
 		m_pricePerNight = p;
 	}
-	void BookVisit(Visit visit) {  // O(n)
+	void BookVisit(Visit& visit)  // O(n)
+	{  
 		// A function that books the visit in the coresponded dates.
 		int temp_m = visit.m_start.month - 1;
 		int temp_d = visit.m_start.day - 1;
@@ -76,7 +79,7 @@ public:
 			temp_d++;		
 		}
 	}
-	double GetVisitCost(Visit v)  //O(1)
+	double GetVisitCost(Visit& v) const  //O(1)
 	{   //A function that returns the calculates the cost of a visit of type(Visit)
 		double amount = v.m_guests*((v.m_days-1)*m_pricePerNight); // the price is calculated by price per night so number of days -1 = number of nights
 		return amount;
@@ -136,7 +139,7 @@ public:
 	}
 	
 
-	void UpdateVisits()// O(n)
+	void UpdateVisits()  // O(n)
 	{   
 		//A function that updates the current visits and the future visits according to the current local date
 
@@ -158,15 +161,15 @@ public:
 		}
 	}
 	public: // get and set functions
-		double GetPricePerNight()
+		double GetPricePerNight() const
 		{
 			return m_pricePerNight;
 		}
-		int GetCurrentNumberOfGuests()
+		int GetCurrentNumberOfGuests() const
 		{
 			return  m_currentGuests;
 		}
-		int GetCapacity()
+		int GetCapacity() const
 		{
 			return m_guestCapacity;
 		}
