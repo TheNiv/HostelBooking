@@ -1,5 +1,5 @@
 #pragma once
-
+#include<iostream>
 class Guest
 {
 private:
@@ -11,6 +11,10 @@ public:
 	Guest(const char* name, int age, const char* id);
 	Guest();
 	~Guest();
+	const char* GetName();
+	int GetAge();
+	const char* GetId();
+	friend std::ostream& operator<< (std::ostream& , Guest guest);
 };
 
 
