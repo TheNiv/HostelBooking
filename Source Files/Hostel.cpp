@@ -1,10 +1,14 @@
 
 #include "Hostel.h"
 #include <ctime>
-Hostel::Hostel(const char* city, int geustCap, double pricePerNight, int currentGuests ) : m_city(city), m_guestCapacity(geustCap),
-																m_pricePerNight(pricePerNight), m_currentGuests(currentGuests)
+#include "linkedList.h";
+Hostel::Hostel(const char* city, int geustCap, double pricePerNight, int currentGuests ) : m_city(city), m_guestCapacity(geustCap), m_pricePerNight(pricePerNight), m_currentGuests(currentGuests)
+																
 {
-	UpdateCurrentDate();
+	time_t now = time(0);
+	tm ltm;
+	localtime_s(&ltm, &now);
+	currentDate = { ltm.tm_mday, ltm.tm_mon + 1, 1900 + ltm.tm_year };
 	for (int y = 0; y < 2; y++)
 	{
 		for (int m = 0; m < 12; m++)
@@ -15,7 +19,6 @@ Hostel::Hostel(const char* city, int geustCap, double pricePerNight, int current
 			}
 		}
 	}
-
 }
 
 Hostel::Hostel() : m_city(""), m_guestCapacity(0), m_pricePerNight(0), m_currentGuests(0),currentDate(Date())
@@ -40,7 +43,7 @@ Hostel::~Hostel()
 
 
 bool Hostel:: CanBook(Visit& visit)  // O(n)
-{
+{	// Returns true if the visit can be booked and false otherwise.
 	if (visit.m_start.m_year != currentDate.m_year && visit.m_start.m_year != currentDate.m_year + 1)
 		return false;
 	if (visit.m_start > currentDate && EnoughSpaceFor(visit))
@@ -50,7 +53,7 @@ bool Hostel:: CanBook(Visit& visit)  // O(n)
 	return false;
 }
 
-bool Hostel::EnoughSpaceFor(Visit& visit) // O(n)
+bool Hostel::EnoughSpaceFor(Visit& visit) const // O(n)
 {
 	//Returns true if there is enough space for the visit to occur in its dates 
 	//and false otherwise.
@@ -69,11 +72,45 @@ bool Hostel::EnoughSpaceFor(Visit& visit) // O(n)
 
 void Hostel::BookVisit(Visit& visit)  // O(n)
 {
-	//Books the visit in the coresponded dates.
+	//Books the visit in the occupation calender and in the future vists list.
+	
+
+	node<Visit> *temp = m_futureVisits.tail;
+	if (m_futureVisits.tail == nullptr)  //1 node case
+	{
+		m_futureVisits.head = new node<Visit>(&visit);
+		m_futureVisits.tail = m_futureVisits.head;
+	}
+	else if (visit.m_start <= temp->m_data->m_start)  //first node
+	{
+		m_futureVisits.InsertFirst(visit);
+	}
+	else if (visit.m_start <= m_futureVisits.head->m_data->m_start)  //checking if its start date is after the last node's start date.
+	{
+		m_futureVisits.InsertLast(visit);
+	}
+	else if (m_currentVisits.tail == m_currentVisits.head)  // 1 node case
+	{
+		m_futureVisits.head = new node<Visit>(&visit);
+		m_futureVisits.tail->next = m_futureVisits.head;
+	}
+	else
+	{
+		while (temp->next != nullptr)  // iterating over the rest of the nodes.
+		{
+			if (visit.m_start < (temp->next->m_data->m_start))
+			{
+				m_futureVisits.InsertAfter(temp, visit);
+				break;
+			}
+			temp = temp->next;
+		}
+	}
+
 	int temp_m = visit.m_start.m_month - 1;
 	int temp_d = visit.m_start.m_day - 1;
 	int temp_y = visit.m_start.m_year == currentDate.m_year ? ThisYear : NextYear;
-	m_futureVisits.push_back(visit);
+	
 	for (int i = 0; i <= visit.m_days; i++)
 	{
 		if (temp_d > 30) // the visit continues next month
@@ -97,7 +134,7 @@ double Hostel:: GetVisitCost(Visit& v) const  //O(1)
 	return amount;
 }
 
-void Hostel:: PrintCalender(int month , int year) // O(1)
+void Hostel:: PrintCalender(int month , int year) const // O(1)
 {
 	//Prints the data in the calender of a specific month and year or the whole occupation calender.
 
@@ -137,6 +174,47 @@ void Hostel:: UpdateCurrentDate() // O(1)
 	{
 		ResetCalender();
 	}
+
+	while (m_futureVisits.tail!= nullptr && currentDate > m_futureVisits.tail->m_data->m_end) //remove the visits that had ended.
+	{
+		m_currentVisits.DeleteFirst();
+	}
+	while (m_futureVisits.tail != nullptr && m_futureVisits.tail->m_data->m_start == currentDate)
+	{
+		StartVisit(*(m_futureVisits.tail->m_data));
+		m_futureVisits.DeleteFirst();
+	}
+}
+void Hostel:: StartVisit(Visit& visit)
+{   //Inserts the visit to the currentVisits list.
+	node<Visit> *temp = m_currentVisits.tail;
+	if (temp == nullptr)  //It is the first node
+	{
+		m_currentVisits.head = new node<Visit>(&visit);
+		m_currentVisits.tail = m_currentVisits.head;
+		return;
+	}
+	else if (visit.m_end <= temp->m_data->m_end)  //checking if it's end date is after the last node's end date.
+	{
+		m_currentVisits.InsertFirst(visit);
+	}
+	else if (m_currentVisits.tail == m_currentVisits.head)  // 1 node case
+	{
+		m_currentVisits.head = new node<Visit>(&visit);
+		m_currentVisits.tail->next = m_currentVisits.head;
+	}
+	else
+	{
+		while (temp->next != nullptr)  // iterating over the rest of the nodes.
+		{
+			if (visit.m_end < temp->next->m_data->m_end)
+			{
+				m_currentVisits.InsertAfter(temp, visit);
+				break;
+			}
+			temp = temp->next;
+		}
+	}
 }
 
 void Hostel:: ResetCalender() // O(1)
@@ -151,26 +229,13 @@ void Hostel:: ResetCalender() // O(1)
 	}
 }
 
-void Hostel:: UpdateVisits()  // O(n)
+void Hostel :: PrintCurrentVisits() 
 {
-	//Updates the current visits and the future visits according to the current local date
-
-	list<Visit> ::iterator it;  // an iterator to iterate through the list.
-
-	for (it = m_futureVisits.begin(); it != m_futureVisits.end(); it++)
-	{
-		if (it->m_start == currentDate) {
-			m_currentVisits.push_back(*it);  // the iterator is a pointer to items in the list
-			m_futureVisits.erase(it);   // removes the visit from the m_future_visit lists.
-		}
-	}
-
-	for (it = m_currentVisits.begin(); it != m_currentVisits.end(); it++)
-	{
-		if (!(it->m_end > currentDate)) {  //!IsAfter == true - the date is before the other date.
-			m_currentVisits.erase(it);   // removes the visit from the m_currentVisits lists.
-		}
-	}
+	m_currentVisits.PrintList();
+}
+void Hostel:: PrintFutureVisits()
+{
+	m_futureVisits.PrintList();
 }
 
 double Hostel::GetPricePerNight() const
@@ -197,3 +262,5 @@ void Hostel:: SetCapacity(int newCapacity)
 {
 	m_guestCapacity = newCapacity;
 }
+
+
